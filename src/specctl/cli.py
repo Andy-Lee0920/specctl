@@ -96,7 +96,7 @@ def start_spec(args):
     run(["git", "pull", "origin", "main"])
     run(["git", "switch", "-c", branch])
 
-    # content = template_text("SPEC_TEMPLATE.md").replace("{{FEATURE_NAME}}", feature)
+    content = template_text("SPEC_TEMPLATE.md").replace("{{FEATURE_NAME}}", feature)
     spec_path.parent.mkdir(parents=True, exist_ok=True)
     spec_path.write_text(content, encoding="utf-8")
 
