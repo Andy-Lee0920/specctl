@@ -103,11 +103,10 @@ def start_spec(args):
     print(f"\n✅ Created {spec_path}")
     print("Next:")
     print(f"  1. Edit {spec_path}")
-    print(f"  2. specctl check {spec_path}")
+    print(f"  2. git add {spec_path}")
     print(f"  3. specctl submit {spec_path} --notify")
     print(f"  [etc] When sending only notifications without creating a PR, run:")
     print(f"  specctl notify {spec_path} --notify")
-
 
 # def check_spec_file(spec_file):
 #     path = Path(spec_file)
@@ -365,6 +364,9 @@ def notify_spec(args):
 
     notify_reviewers(spec_file)
 
+    if args.email:
+        send_review_email(spec_file, pr_url)
+
 def ci_check(args):
     changed_files = changed_files_against_base(args.base)
 
@@ -388,6 +390,12 @@ def ci_check(args):
     print("✅ CI spec check passed")
 
 def build_review_email_body(spec_file, pr_url):
+    path = Path(spec_file)
+    if path.exists():
+        spec_content = path.read_text(encoding="utf-8")
+    else:
+        spec_content = f"(파일을 찾을 수 없습니다: {spec_file})"
+
     return f"""새로운 spec review 요청이 도착했습니다.
 
 Spec file:
@@ -405,7 +413,12 @@ Pull Request:
 5. Validation plan이 실제 사용자 검증으로 이어질 수 있는가?
 
 피드백은 GitHub PR에 comment로 남겨주세요.
-"""
+
+---
+
+[Spec 내용]
+
+{spec_content}"""
 
 def send_review_email(spec_file, pr_url):
     recipients = load_team_emails()
@@ -526,14 +539,22 @@ def main():
 
     p = sub.add_parser(
         "notify",
-        help="기존 PR에 팀원 리뷰 요청 댓글을 작성합니다.",
+        help="기존 PR에 팀원 리뷰 요청 알림을 재발송합니다.",
         description=(
             "이미 열려 있는 PR에 .specctl/team.yml의 팀원들을 멘션하는 댓글을 답니다.\n"
-            "PR 없이 실행하면 오류가 발생합니다. PR 생성 후 사용하세요."
+            "PR 없이 실행하면 오류가 발생합니다. PR 생성 후 사용하세요.\n\n"
+            "예시:\n"
+            "  specctl notify docs/specs/user-login.md\n"
+            "  specctl notify docs/specs/user-login.md --email"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("spec_file", help="알림을 보낼 spec 파일 경로 (예: docs/specs/user-login.md)")
+    p.add_argument(
+        "--email",
+        action="store_true",
+        help=".specctl/team.yml의 팀원들에게 리뷰 요청 이메일을 재발송합니다.",
+    )
     p.set_defaults(func=notify_spec)
 
     p = sub.add_parser(
