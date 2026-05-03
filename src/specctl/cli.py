@@ -85,7 +85,7 @@ def current_branch():
 
 def start_spec(args):
     feature = args.feature_name
-    # spec_path = SPEC_DIR / f"{feature}.md"
+    spec_path = SPEC_DIR / f"{feature}.md"
     branch = f"spec/{feature}"
 
     if spec_path.exists():
