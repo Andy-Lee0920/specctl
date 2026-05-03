@@ -58,16 +58,25 @@ def init_repo(args):
     # write_file_if_missing("templates/SPEC_TEMPLATE.md", template_text("SPEC_TEMPLATE.md"))
     # write_file_if_missing(".github/pull_request_template.md", template_text("pull_request_template.md"))
     # write_file_if_missing(".github/workflows/spec-check.yml", template_text("spec-check.yml"))
+    write_file_if_missing("email-notification-setting.md", template_text("email-notification-setting.md"))
 
     SPEC_DIR.mkdir(parents=True, exist_ok=True)
     # write_file_if_missing("docs/specs/.gitkeep", "")
 
     print("\n✅ specctl initialized.")
     print("Next:")
-    print("  1. Edit .specctl/team.yml")
+    print("  1. Edit .specctl/team.yml  (팀원 github ID / email 등록)")
     print("  2. git add .specctl .github templates docs")
     print('  3. git commit -m "chore: add spec workflow"')
     print("  4. git push")
+    print()
+    print("[Email] 이메일 알림을 사용하려면:")
+    print('  export SPECCTL_SMTP_HOST="smtp.gmail.com"')
+    print('  export SPECCTL_SMTP_PORT="587"')
+    print('  export SPECCTL_SMTP_USERNAME="your-email@gmail.com"')
+    print('  export SPECCTL_SMTP_PASSWORD="your-app-password"')
+    print('  export SPECCTL_EMAIL_FROM="your-email@gmail.com"')
+    print("  -> 자세한 설정 방법: email-notification-setting.md")
 
 
 def current_branch():
@@ -135,8 +144,6 @@ def start_spec(args):
 #     print("✅ SPEC CHECK PASSED")
 
 
-# def check_spec(args):
-#     check_spec_file(args.spec_file)
 
 
 def changed_files_against_head():
