@@ -95,46 +95,48 @@ def start_spec(args):
     print("Next:")
     print(f"  1. Edit {spec_path}")
     print(f"  2. specctl check {spec_path}")
-    print(f"  3. specctl submit {spec_path} --notify --email")
+    print(f"  3. specctl submit {spec_path} --notify")
+    print(f"  [etc] When sending only notifications without creating a PR, run:")
+    print(f"  specctl notify {spec_path} --notify")
 
 
-def check_spec_file(spec_file):
-    path = Path(spec_file)
+# def check_spec_file(spec_file):
+#     path = Path(spec_file)
 
-    if not path.exists():
-        print(f"❌ File not found: {path}")
-        sys.exit(1)
+#     if not path.exists():
+#         print(f"❌ File not found: {path}")
+#         sys.exit(1)
 
-    text = path.read_text(encoding="utf-8")
-    errors = []
+#     text = path.read_text(encoding="utf-8")
+#     errors = []
 
-    for section in REQUIRED_SECTIONS:
-        if section not in text:
-            errors.append(f"Missing section: {section}")
+#     for section in REQUIRED_SECTIONS:
+#         if section not in text:
+#             errors.append(f"Missing section: {section}")
 
-    lower = text.lower()
+#     lower = text.lower()
 
-    if "## ai behavior" in lower:
-        if "model" not in lower:
-            errors.append("AI Behavior should include model")
-        if "input" not in lower:
-            errors.append("AI Behavior should include input")
-        if "output" not in lower:
-            errors.append("AI Behavior should include output")
-        if "fallback" not in lower and "failure" not in lower:
-            errors.append("AI Behavior should include failure/fallback")
+#     if "## ai behavior" in lower:
+#         if "model" not in lower:
+#             errors.append("AI Behavior should include model")
+#         if "input" not in lower:
+#             errors.append("AI Behavior should include input")
+#         if "output" not in lower:
+#             errors.append("AI Behavior should include output")
+#         if "fallback" not in lower and "failure" not in lower:
+#             errors.append("AI Behavior should include failure/fallback")
 
-    if errors:
-        print("❌ SPEC CHECK FAILED\n")
-        for i, error in enumerate(errors, 1):
-            print(f"{i}. {error}")
-        sys.exit(1)
+#     if errors:
+#         print("❌ SPEC CHECK FAILED\n")
+#         for i, error in enumerate(errors, 1):
+#             print(f"{i}. {error}")
+#         sys.exit(1)
 
-    print("✅ SPEC CHECK PASSED")
+#     print("✅ SPEC CHECK PASSED")
 
 
-def check_spec(args):
-    check_spec_file(args.spec_file)
+# def check_spec(args):
+#     check_spec_file(args.spec_file)
 
 
 def changed_files_against_head():
