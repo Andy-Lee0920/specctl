@@ -1,6 +1,9 @@
 import argparse
+import os
+import smtplib
 import subprocess
 import sys
+from email.message import EmailMessage
 from pathlib import Path
 from importlib.resources import files
 
@@ -177,6 +180,23 @@ def load_team_members():
 
     return github_ids
 
+def load_team_emails():
+    if not TEAM_FILE.exists():
+        print("⚠️ .specctl/team.yml not found. Skipping email notification.")
+        return []
+
+    data = yaml.safe_load(TEAM_FILE.read_text(encoding="utf-8")) or {}
+    members = data.get("members", [])
+
+    emails = []
+
+    for member in members:
+        email = member.get("email")
+        if email and "example.com" not in email:
+            emails.append(email)
+
+    return emails
+
 
 def create_pr(spec_file):
     title = f"Spec: {Path(spec_file).stem}"
@@ -265,10 +285,13 @@ def submit_spec(args):
     run(["git", "commit", "-m", f"docs: add/update spec {Path(spec_file).stem}"])
     run(["git", "push", "-u", "origin", current_branch()])
 
-    create_pr(spec_file)
+    pr_url = create_pr(spec_file)
 
     if args.notify:
         notify_reviewers(spec_file)
+
+    if args.email:
+        send_review_email(spec_file, pr_url)
 
 
 def ci_check(args):
@@ -293,6 +316,84 @@ def ci_check(args):
 
     print("✅ CI spec check passed")
 
+def build_review_email_body(spec_file, pr_url):
+    return f"""새로운 spec review 요청이 도착했습니다.
+
+Spec file:
+{spec_file}
+
+Pull Request:
+{pr_url}
+
+아래 기준으로 리뷰해주세요.
+
+1. Target user가 충분히 구체적인가?
+2. P0 / P1 / P2 우선순위가 적절한가?
+3. "Not Building"이 명확한가?
+4. AI를 쓴다면 model/input/output/fallback이 명확한가?
+5. Validation plan이 실제 사용자 검증으로 이어질 수 있는가?
+
+피드백은 GitHub PR에 comment로 남겨주세요.
+"""
+
+def send_review_email(spec_file, pr_url):
+    recipients = load_team_emails()
+
+    if not recipients:
+        print("⚠️ No reviewer emails found in .specctl/team.yml")
+        return
+
+    smtp_host = os.getenv("SPECCTL_SMTP_HOST")
+    smtp_port = int(os.getenv("SPECCTL_SMTP_PORT", "587"))
+    smtp_username = os.getenv("SPECCTL_SMTP_USERNAME")
+    smtp_password = os.getenv("SPECCTL_SMTP_PASSWORD")
+    email_from = os.getenv("SPECCTL_EMAIL_FROM", smtp_username)
+
+    missing = []
+
+    if not smtp_host:
+        missing.append("SPECCTL_SMTP_HOST")
+    if not smtp_username:
+        missing.append("SPECCTL_SMTP_USERNAME")
+    if not smtp_password:
+        missing.append("SPECCTL_SMTP_PASSWORD")
+    if not email_from:
+        missing.append("SPECCTL_EMAIL_FROM")
+
+    if missing:
+        print("⚠️ Email notification skipped.")
+        print("Missing environment variables:")
+        for name in missing:
+            print(f"- {name}")
+        print("\nExample:")
+        print('  export SPECCTL_SMTP_HOST="smtp.gmail.com"')
+        print('  export SPECCTL_SMTP_PORT="587"')
+        print('  export SPECCTL_SMTP_USERNAME="your-email@example.com"')
+        print('  export SPECCTL_SMTP_PASSWORD="your-app-password"')
+        print('  export SPECCTL_EMAIL_FROM="your-email@example.com"')
+        return
+
+    subject = f"[Spec Review Needed] {Path(spec_file).stem}"
+    body = build_review_email_body(spec_file, pr_url)
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = email_from
+    msg["To"] = ", ".join(recipients)
+    msg.set_content(body)
+
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.send_message(msg)
+
+        print(f"✅ Sent review email to {len(recipients)} reviewer(s)")
+
+    except Exception as e:
+        print("⚠️ Failed to send review email.")
+        print(f"Reason: {e}")
+        print("GitHub PR was still created successfully.")
 
 def main():
     parser = argparse.ArgumentParser(prog="specctl")
@@ -312,6 +413,7 @@ def main():
     p = sub.add_parser("submit")
     p.add_argument("spec_file")
     p.add_argument("--notify", action="store_true")
+    p.add_argument("--email", action="store_true")
     p.set_defaults(func=submit_spec)
 
     p = sub.add_parser("ci-check")

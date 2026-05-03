@@ -2,5 +2,7 @@ team_name: your-team-name
 members:
   - name: Alice
     github: alice-github-id
+    email: alice@example.com
   - name: Bob
     github: bob-github-id
+    email: bob@example.com
