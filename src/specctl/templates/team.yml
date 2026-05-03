@@ -1,0 +1,6 @@
+team_name: your-team-name
+members:
+  - name: Alice
+    github: alice-github-id
+  - name: Bob
+    github: bob-github-id

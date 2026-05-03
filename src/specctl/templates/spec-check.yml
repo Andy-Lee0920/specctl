@@ -1,0 +1,24 @@
+name: Spec Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  spec-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install specctl
+        run: |
+          python -m pip install "git+https://github.com/Andy-Lee0920/specctl.git"
+
+      - name: Run spec check
+        run: |
+          specctl ci-check --base origin/main
