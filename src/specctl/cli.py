@@ -55,12 +55,12 @@ def write_file_if_missing(path, content):
 
 def init_repo(args):
     write_file_if_missing(".specctl/team.yml", template_text("team.yml"))
-    write_file_if_missing("templates/SPEC_TEMPLATE.md", template_text("SPEC_TEMPLATE.md"))
-    write_file_if_missing(".github/pull_request_template.md", template_text("pull_request_template.md"))
-    write_file_if_missing(".github/workflows/spec-check.yml", template_text("spec-check.yml"))
+    # write_file_if_missing("templates/SPEC_TEMPLATE.md", template_text("SPEC_TEMPLATE.md"))
+    # write_file_if_missing(".github/pull_request_template.md", template_text("pull_request_template.md"))
+    # write_file_if_missing(".github/workflows/spec-check.yml", template_text("spec-check.yml"))
 
     SPEC_DIR.mkdir(parents=True, exist_ok=True)
-    write_file_if_missing("docs/specs/.gitkeep", "")
+    # write_file_if_missing("docs/specs/.gitkeep", "")
 
     print("\n✅ specctl initialized.")
     print("Next:")
@@ -76,7 +76,7 @@ def current_branch():
 
 def start_spec(args):
     feature = args.feature_name
-    spec_path = SPEC_DIR / f"{feature}.md"
+    # spec_path = SPEC_DIR / f"{feature}.md"
     branch = f"spec/{feature}"
 
     if spec_path.exists():
@@ -87,7 +87,7 @@ def start_spec(args):
     run(["git", "pull", "origin", "main"])
     run(["git", "switch", "-c", branch])
 
-    content = template_text("SPEC_TEMPLATE.md").replace("{{FEATURE_NAME}}", feature)
+    # content = template_text("SPEC_TEMPLATE.md").replace("{{FEATURE_NAME}}", feature)
     spec_path.parent.mkdir(parents=True, exist_ok=True)
     spec_path.write_text(content, encoding="utf-8")
 
@@ -460,31 +460,103 @@ def send_review_email(spec_file, pr_url):
         print("GitHub PR was still created successfully.")
 
 def main():
-    parser = argparse.ArgumentParser(prog="specctl")
+    parser = argparse.ArgumentParser(
+        prog="specctl",
+        description="spec 기반 기능 개발 워크플로우를 관리하는 CLI 도구입니다.",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p = sub.add_parser("init")
+    p = sub.add_parser(
+        "init",
+        help="현재 저장소에 specctl 환경을 초기화합니다.",
+        description=(
+            "specctl 사용에 필요한 파일들을 생성합니다:\n"
+            "  .specctl/team.yml              — 리뷰어 목록 설정 파일\n"
+            "  templates/SPEC_TEMPLATE.md     — spec 작성용 마크다운 템플릿\n"
+            "  .github/pull_request_template.md — PR 템플릿\n"
+            "  .github/workflows/spec-check.yml — CI 워크플로우\n"
+            "  docs/specs/                    — spec 파일 저장 디렉터리"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     p.set_defaults(func=init_repo)
 
-    p = sub.add_parser("start")
-    p.add_argument("feature_name")
+    p = sub.add_parser(
+        "start",
+        help="새 기능의 spec 파일과 브랜치를 생성합니다.",
+        description=(
+            "main 브랜치에서 spec/<feature_name> 브랜치를 만들고,\n"
+            "docs/specs/<feature_name>.md spec 파일을 템플릿으로부터 생성합니다."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument("feature_name", help="기능 이름 (예: user-login, ai-search)")
     p.set_defaults(func=start_spec)
 
-    p = sub.add_parser("check")
-    p.add_argument("spec_file")
-    # p.set_defaults(func=check_spec)
+    p = sub.add_parser(
+        "check",
+        help="[비활성화] spec 파일의 필수 섹션을 검사합니다.",
+        description=(
+            "spec 파일에 필수 섹션이 모두 포함되어 있는지 검사합니다.\n"
+            "※ 현재 비활성화 상태입니다. check_spec_file 함수 복원 후 사용 가능합니다."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument("spec_file", help="검사할 spec 파일 경로 (예: docs/specs/user-login.md)")
+    p.set_defaults(func=check_spec)
 
-    p = sub.add_parser("submit")
-    p.add_argument("spec_file")
-    p.add_argument("--notify", action="store_true")
+    p = sub.add_parser(
+        "submit",
+        help="spec 파일을 커밋·푸시하고 GitHub PR을 생성합니다.",
+        description=(
+            "변경된 spec 파일을 커밋하고 origin에 푸시한 뒤 GitHub PR을 엽니다.\n"
+            "docs/specs/ 이외의 파일이 변경되어 있으면 오류로 중단됩니다.\n\n"
+            "예시:\n"
+            "  specctl submit docs/specs/user-login.md --notify --email"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument("spec_file", help="제출할 spec 파일 경로 (예: docs/specs/user-login.md)")
+    p.add_argument(
+        "--notify",
+        action="store_true",
+        help=".specctl/team.yml의 팀원들을 GitHub PR 댓글로 멘션합니다.",
+    )
+    p.add_argument(
+        "--email",
+        action="store_true",
+        help=".specctl/team.yml의 팀원들에게 리뷰 요청 이메일을 발송합니다.",
+    )
     p.set_defaults(func=submit_spec)
 
-    p = sub.add_parser("notify")
-    p.add_argument("spec_file")
+    p = sub.add_parser(
+        "notify",
+        help="기존 PR에 팀원 리뷰 요청 댓글을 작성합니다.",
+        description=(
+            "이미 열려 있는 PR에 .specctl/team.yml의 팀원들을 멘션하는 댓글을 답니다.\n"
+            "PR 없이 실행하면 오류가 발생합니다. PR 생성 후 사용하세요."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument("spec_file", help="알림을 보낼 spec 파일 경로 (예: docs/specs/user-login.md)")
     p.set_defaults(func=notify_spec)
 
-    p = sub.add_parser("ci-check")
-    p.add_argument("--base", default="origin/main")
+    p = sub.add_parser(
+        "ci-check",
+        help="CI 환경에서 spec PR의 변경 파일 범위를 검사합니다.",
+        description=(
+            "spec/* 브랜치에서 변경된 파일이 docs/specs/ 내부에만 있는지 확인합니다.\n"
+            "GitHub Actions 등 CI 파이프라인에서 자동으로 호출되도록 설계되었습니다.\n\n"
+            "예시:\n"
+            "  specctl ci-check --base origin/main"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument(
+        "--base",
+        default="origin/main",
+        help="비교 기준 브랜치 (기본값: origin/main)",
+    )
     p.set_defaults(func=ci_check)
 
     args = parser.parse_args()
