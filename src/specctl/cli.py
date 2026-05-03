@@ -501,18 +501,6 @@ def main():
     p.set_defaults(func=start_spec)
 
     p = sub.add_parser(
-        "check",
-        help="[비활성화] spec 파일의 필수 섹션을 검사합니다.",
-        description=(
-            "spec 파일에 필수 섹션이 모두 포함되어 있는지 검사합니다.\n"
-            "※ 현재 비활성화 상태입니다. check_spec_file 함수 복원 후 사용 가능합니다."
-        ),
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    p.add_argument("spec_file", help="검사할 spec 파일 경로 (예: docs/specs/user-login.md)")
-    p.set_defaults(func=check_spec)
-
-    p = sub.add_parser(
         "submit",
         help="spec 파일을 커밋·푸시하고 GitHub PR을 생성합니다.",
         description=(
