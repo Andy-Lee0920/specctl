@@ -1,6 +1,6 @@
 [project]
 name = "specctl"
-version = "0.2.0"
+version = "0.3.0"
 description = "Spec-first workflow helper for student projects"
 requires-python = ">=3.9"
 dependencies = [

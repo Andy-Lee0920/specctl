@@ -95,7 +95,7 @@ def start_spec(args):
     print("Next:")
     print(f"  1. Edit {spec_path}")
     print(f"  2. specctl check {spec_path}")
-    print(f"  3. specctl submit {spec_path} --notify")
+    print(f"  3. specctl submit {spec_path} --notify --email")
 
 
 def check_spec_file(spec_file):
@@ -199,7 +199,9 @@ def load_team_emails():
 
 
 def create_pr(spec_file):
+    branch = current_branch()
     title = f"Spec: {Path(spec_file).stem}"
+
     body = f"""Spec-only PR for `{spec_file}`.
 
 Please review:
@@ -216,28 +218,56 @@ Please review:
                 "gh",
                 "pr",
                 "create",
+                "--base",
+                "main",
+                "--head",
+                branch,
                 "--title",
                 title,
                 "--body",
                 body,
-                "--base",
-                "main",
             ],
             capture=True,
         )
         print(f"✅ Created PR: {url}")
         return url
+
     except FileNotFoundError:
         print("❌ GitHub CLI `gh` is not installed.")
-        print("Install GitHub CLI and run:")
-        print("  gh auth login")
-        sys.exit(1)
-    except subprocess.CalledProcessError:
-        print("❌ Failed to create PR with GitHub CLI.")
-        print("Make sure GitHub CLI is authenticated:")
+        print("Install GitHub CLI, then run:")
         print("  gh auth login")
         sys.exit(1)
 
+    except subprocess.CalledProcessError:
+        print("⚠️ Could not create a new PR. Checking whether a PR already exists for this branch...")
+
+        try:
+            existing_url = run(
+                [
+                    "gh",
+                    "pr",
+                    "view",
+                    branch,
+                    "--json",
+                    "url",
+                    "--jq",
+                    ".url",
+                ],
+                capture=True,
+            )
+
+            if existing_url:
+                print(f"✅ Existing PR found: {existing_url}")
+                return existing_url
+
+        except subprocess.CalledProcessError:
+            pass
+
+        print("❌ Failed to create or find PR.")
+        print("Please check GitHub CLI authentication:")
+        print("  gh auth status")
+        print("  gh auth login")
+        sys.exit(1)
 
 def notify_reviewers(spec_file):
     github_ids = load_team_members()
@@ -293,6 +323,38 @@ def submit_spec(args):
     if args.email:
         send_review_email(spec_file, pr_url)
 
+def notify_spec(args):
+    spec_file = args.spec_file
+
+    check_spec_file(spec_file)
+
+    branch = current_branch()
+    if not branch.startswith("spec/"):
+        print(f"⚠️ Current branch is `{branch}`.")
+        print("Notifications are usually sent from a spec/* branch.")
+
+    try:
+        pr_url = run(
+            ["gh", "pr", "view", "--json", "url", "--jq", ".url"],
+            capture=True,
+        )
+        if not pr_url:
+            print("❌ No pull request found for the current branch.")
+            print("Create a PR first, then run this command again.")
+            sys.exit(1)
+
+        print(f"✅ Found PR: {pr_url}")
+    except FileNotFoundError:
+        print("❌ GitHub CLI `gh` is not installed.")
+        print("Install GitHub CLI and run:")
+        print(" gh auth login")
+        sys.exit(1)
+    except subprocess.CalledProcessError:
+        print("❌ No pull request found for the current branch.")
+        print("Create a PR first, then run this command again.")
+        sys.exit(1)
+
+    notify_reviewers(spec_file)
 
 def ci_check(args):
     changed_files = changed_files_against_base(args.base)
@@ -413,8 +475,11 @@ def main():
     p = sub.add_parser("submit")
     p.add_argument("spec_file")
     p.add_argument("--notify", action="store_true")
-    p.add_argument("--email", action="store_true")
     p.set_defaults(func=submit_spec)
+
+    p = sub.add_parser("notify")
+    p.add_argument("spec_file")
+    p.set_defaults(func=notify_spec)
 
     p = sub.add_parser("ci-check")
     p.add_argument("--base", default="origin/main")

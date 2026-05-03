@@ -1,55 +1,31 @@
 # Spec: {{FEATURE_NAME}}
 
-## Target User
+## 목적 (Why & Who)
 
-Who is this feature for?
+타겟 및 문제: 누가 어떤 불편함을 느껴서 이걸 만드나요?
+:
 
-## Problem
+## 핵심 기능 (Scope)
 
-What specific problem are we solving?
+P0 (필수): 데모를 위해 '반드시' 작동해야 하는 것
+:
+P1/P2 (제외): 이번에 안 하거나 나중에 할 것 (간략히)
+:
 
-## P0
+## 유저 경험 (UX & AI)
 
-Must ship for demo.
+사용자 흐름: 유저가 들어와서 보게 될 핵심 단계 (1 → 2 → 3)
 
-## P1
+1.
+2.
+3.
 
-Ship if time allows.
+## 데모 합격 기준 (Success)
 
-## P2
+최소 요건: 시연 때 "이게 되면 성공이다"라고 부를 수 있는 기준
+:
 
-Future work.
+## 확인 사항 (Validation)
 
-## Not Building
-
-What are we explicitly not building this time?
-
-## User Flow
-
-What does the user do step by step?
-
-## AI Behavior
-
-### Model
-
-Which model are we using?
-
-### Input
-
-What do we send to the model?
-
-### Output
-
-What should the model return?
-
-### Failure / Fallback
-
-What happens if the model times out, returns malformed output, or gives a bad answer?
-
-## Validation Plan
-
-How will we test this with a real user?
-
-## Demo Acceptance Criteria
-
-What must work during the demo?
+어떻게 테스트할 예정인가요?
+:
