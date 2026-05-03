@@ -104,9 +104,9 @@ def start_spec(args):
     print("Next:")
     print(f"  1. Edit {spec_path}")
     print(f"  2. git add {spec_path}")
-    print(f"  3. specctl submit {spec_path} --notify")
+    print(f"  3. specctl submit {spec_path} --notify --email")
     print(f"  [etc] When sending only notifications without creating a PR, run:")
-    print(f"  specctl notify {spec_path} --notify")
+    print(f"  specctl notify {spec_path} --email")
 
 # def check_spec_file(spec_file):
 #     path = Path(spec_file)
